@@ -1,0 +1,13 @@
+/* 
+    *  CONTENEDOR PRINCIPAL
+*/
+
+.Editor{
+    margin: 0;
+    padding: 10px;
+    background-color: rgb(214, 219, 196);
+
+    /* Establezco en grid en 2 filas */
+    display: grid;
+    grid-template-rows: auto 10%;
+}

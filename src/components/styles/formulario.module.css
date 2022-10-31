@@ -1,0 +1,13 @@
+/* 
+    *  CONTENEDOR PRINCIPAL
+*/
+
+.Formulario{
+    margin: 0;
+    padding: 10px;
+    background-color: rgb(62, 148, 206);
+
+    /* Establezco el grid en 3 filas */
+    display: grid;
+    grid-template-rows: auto auto 10%;
+}

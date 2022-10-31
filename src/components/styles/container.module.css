@@ -1,0 +1,12 @@
+.Container{
+    margin: 0;
+    padding: 0;
+    /* Establezco alto ancho y color de fondo */
+    width: 100vw;
+    height: 100vh;
+    background-color: rgb(99, 94, 94);
+
+    /* Defino el GRID. 2 columnas de mitad de pantalla cada una*/
+    display: grid;
+    grid-template-columns: 50% 50%;
+}
