@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { PeticionApi } from "../services/Api.js";
 import styles from "./styles/formulario.module.css";
 
-export default function Formulario({parametros}) {
+export default function Formulario({ FuncSetCadenaUrl }) {
 	const Meses = {
 		5: "Enero",
 		6: "Febrero",
@@ -48,53 +48,110 @@ export default function Formulario({parametros}) {
 	const [selectGrupos, setSelectGrupos] = useState([]);
 	const [selectMeses, setSelectMeses] = useState([]);
 
-	const SetFiltros = async () => {
-		const respuesta = await PeticionApi("/datafields/");
-		setSelectMeses(respuesta.mes);
-		setSelectGrupos(respuesta.codigogrupo);
-		setSelectCarreras(respuesta.nivel);
-		setSelectCiclos(respuesta.codigo_corto);
+	/* Enabled Filtros */
+	/* Lo primero a filtrar es el ciclo escolar */
+	const [disableCarreras, setDisableCarreras] = useState(true);
+	const [disableGrupos, setDisabledGrupos] = useState(true);
+	const [disableMeses, setDisableMeses] = useState(true);
+
+	const [ciclo, setCiclo] = useState("");
+	const [carrera, setCarrera] = useState("");
+	const [grupo, setGrupo] = useState("");
+	const [mes, setMes] = useState("");
+
+	/* Data field ciclos */
+	const HandleCiclo = async (event) => {
+		setCiclo(event.target.value);
+		setDisableCarreras(false);
+
+		if (carrera !== "") {
+			setCarrera("");
+			setGrupo("");
+			setMes("");
+
+			//disableCarreras(true);
+			setDisabledGrupos(true);
+			setDisableMeses(true);
+		}
 	};
 
-	const [carrera, setCarrera] = useState("");
-	const [ciclo, setCiclo] = useState("");
-	const [mes, setMes] = useState("");
-	const [grupo, setGrupo] = useState("");
+	const SetCiclos = async () => {
+		const respuestaCiclos = await PeticionApi("/datafields/ciclos");
+		setSelectCiclos(respuestaCiclos);
+	};
+	/* Al cargar la aplicacion se carga el datafield de ciclos */
+	useEffect(() => {
+		SetCiclos();
+	}, []);
 
+	/* Datafield Carrera */
 	const HandleCarrera = (event) => {
 		setCarrera(event.target.value);
+		setDisabledGrupos(false);
+
+		if (grupo !== "") {
+			setGrupo("");
+			setMes("");
+
+			setDisableMeses(true);
+		}
 	};
 
-	const HandleCiclo = (event) => {
-		setCiclo(event.target.value);
+	const PeticionCarrera = async (ciclos) => {
+		const respuestaCarreras = await PeticionApi(
+			`/datafields/carreras/${ciclos}`
+		);
+		//console.log(respuestaCarreras);
+		setSelectCarreras(respuestaCarreras);
+	};
+	/* Si se cambia el valor del data field ciclo, se actualiza el data field carrera */
+	useEffect(() => {
+		if (ciclo === "") return;
+		PeticionCarrera(ciclo);
+	}, [ciclo]);
+
+	/* Datafield Grupo */
+	const HandleGrupo = (event) => {
+		setGrupo(event.target.value);
+		setDisableMeses(false);
+
+		if (mes !== "") {
+			setMes("");
+		}
 	};
 
+	const PeticionGrupo = async (periodo, nivel) => {
+		const respuestaGrupos = await PeticionApi(
+			`/datafields/grupos/${periodo}/${nivel}`
+		);
+		//console.log(respuestaGrupos);
+		setSelectGrupos(respuestaGrupos);
+	};
+
+	useEffect(() => {
+		if (ciclo === "" || carrera === "") return;
+		PeticionGrupo(ciclo, carrera);
+	}, [ciclo, carrera]);
+
+	/* Datafield Mes */
 	const HandleMes = (event) => {
 		setMes(event.target.value);
 	};
 
-	const HandleGrupo = (event) => {
-		setGrupo(event.target.value);
+	const PeticionMes = async () => {
+		const respuestaMes = await PeticionApi(`/datafields/meses`);
+		//console.log(respuestaMes);
+		setSelectMeses(respuestaMes.mes);
 	};
 
 	useEffect(() => {
-		SetFiltros();
-	}, []);
+		if (grupo === "") return;
+		PeticionMes();
+	},[grupo]);
 
 	const handleClick = () => {
-		const cadena = `/${carrera}/${grupo}/${ciclo}/${mes}`
-		parametros(cadena);
-
-		/* console.log("ADMINISTRADOR ----------------")
-		console.log(email);
-		console.log(password);
-		console.log(puerto);
-		console.log(tiempoEnvio);
-		console.log("FILTROS -------------------")
-		console.log(carrera);
-		console.log(ciclo);
-		console.log(mes);
-		console.log(grupo); */
+		const cadena = `${carrera}/${grupo}/${ciclo}/${mes}`;
+		FuncSetCadenaUrl(cadena);
 	};
 
 	return (
@@ -133,10 +190,10 @@ export default function Formulario({parametros}) {
 						onChange={HandleTiempoEnvio}
 					>
 						<MenuItem value={1000}>1 segundo</MenuItem>
+						<MenuItem value={5000}>5 segundos</MenuItem>
+						<MenuItem value={10000}>10 segundos</MenuItem>
+						<MenuItem value={15000}>15 segundos</MenuItem>
 						<MenuItem value={30000}>30 segundos</MenuItem>
-						<MenuItem value={60000}>1 minuto</MenuItem>
-						<MenuItem value={180000}>3 minutos</MenuItem>
-						<MenuItem value={300000}>5 minutos</MenuItem>
 					</TextField>
 				</FormControl>
 			</div>
@@ -147,22 +204,10 @@ export default function Formulario({parametros}) {
 					<TextField
 						select
 						required
-						label="Carrera"
-						value={carrera}
-						onChange={HandleCarrera}
-					>
-						{selectCarreras.map((item, index) => (
-							<MenuItem key={index} value={item}>
-								{item}
-							</MenuItem>
-						))}
-					</TextField>
-					<TextField
-						select
-						required
 						label="Ciclos"
 						value={ciclo}
 						onChange={HandleCiclo}
+						disabled={false}
 					>
 						{selectCiclos.map((item, index) => (
 							<MenuItem key={index} value={item.periodo}>
@@ -170,12 +215,47 @@ export default function Formulario({parametros}) {
 							</MenuItem>
 						))}
 					</TextField>
+
+					<TextField
+						select
+						required
+						label="Carrera"
+						value={carrera}
+						onChange={HandleCarrera}
+						disabled={disableCarreras}
+					>
+						{selectCarreras.map((item, index) => (
+							<MenuItem key={index} value={item.nivel}>
+								{item.nivel}
+							</MenuItem>
+						))}
+					</TextField>
+
+					<TextField
+						select
+						required
+						label="Grupo"
+						value={grupo}
+						onChange={HandleGrupo}
+						disabled={disableGrupos}
+					>
+						{selectGrupos.map((item) => (
+							<MenuItem
+								key={item.codigogrupo}
+								value={item.codigogrupo}
+							>
+								{item.codigogrupo}
+							</MenuItem>
+						))}
+					</TextField>
+
 					<TextField
 						select
 						required
 						label="Mes"
 						value={mes}
 						onChange={HandleMes}
+						disabled={disableMeses}
 					>
 						{selectMeses.map((item) => (
 							<MenuItem key={item} value={item}>
@@ -183,27 +263,11 @@ export default function Formulario({parametros}) {
 							</MenuItem>
 						))}
 					</TextField>
-					<TextField
-						select
-						required
-						label="Grupo"
-						value={grupo}
-						onChange={HandleGrupo}
-					>
-						{selectGrupos.map((item) => (
-							<MenuItem key={item} value={item}>
-								{item}
-							</MenuItem>
-						))}
-					</TextField>
 				</FormControl>
 			</div>
 			{/* Footbar */}
 			<div className="">
-				<button onClick={() => alert("funcion no implementada")}>
-					Configuration
-				</button>
-				<button onClick={handleClick}>Enviar</button>
+				<button onClick={handleClick}>Ver alumnos</button>
 			</div>
 		</div>
 	);
